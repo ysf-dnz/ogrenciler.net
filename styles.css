@@ -2736,3 +2736,61 @@ html[data-theme='light'] .roadmap-month {
     gap: 12px;
   }
 }
+
+/* ===== Etiket Yönetimi ===== */
+.team-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.label-manager-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.label-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.label-color-input {
+  width: 36px !important;
+  height: 32px !important;
+  padding: 2px !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1px solid var(--border) !important;
+  background: transparent;
+}
+
+.label-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.label-add-row .form-input { height: 36px; }
+
+.label-color-picker {
+  width: 44px !important;
+  height: 36px !important;
+  padding: 3px !important;
+  flex-shrink: 0;
+}
+
+.btn-label-save, .btn-label-delete {
+  padding: 4px 8px !important;
+  min-width: unset !important;
+}

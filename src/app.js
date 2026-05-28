@@ -39,6 +39,7 @@ import { initOnboarding, checkOnboarding, setResetCompleteCallback } from './fea
 import { initShortcuts } from './features/shortcuts.js';
 import { initExportImport, setImportCompleteCallback } from './features/export-import.js';
 import { initMobileNav, closeMobileSidebar } from './features/mobile-nav.js';
+import { initLabelManager } from './features/label-manager.js';
 
 // -------- Aktif kullanıcı seçici (sidebar) --------
 function populateActiveUserSelect() {
@@ -154,7 +155,8 @@ function boot() {
     $('#modal-task-detail'),
     $('#modal-task-create'),
     $('#modal-member-create'),
-    $('#modal-onboarding')
+    $('#modal-onboarding'),
+    $('#modal-label-manager')
   ]);
 
   // Tüm modülleri başlat (event listener bağlamak için)
@@ -171,6 +173,7 @@ function boot() {
   initShortcuts();
   initExportImport();
   initMobileNav();
+  initLabelManager();
   initActiveUserSelect();
   initAuth();
   initMultiTabSync();
