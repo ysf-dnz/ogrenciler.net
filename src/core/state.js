@@ -165,8 +165,12 @@ export async function syncFromFirebase() {
  * Başka cihazlardan gelen gerçek zamanlı değişiklikleri dinler.
  * @param {function} rerenderCallback — state güncellendikten sonra çalışır
  */
+let _remoteSyncStarted = false;
+
 export function startRemoteSync(rerenderCallback) {
   if (!isFirebaseReady()) return;
+  if (_remoteSyncStarted) return;   // Sadece bir kez başlat
+  _remoteSyncStarted = true;
 
   subscribeToRemoteChanges((remoteData) => {
     const localAuth = {

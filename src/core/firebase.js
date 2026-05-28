@@ -29,7 +29,8 @@ const DB_PATH = 'workspace/v1';
 // ─── İç değişkenler ──────────────────────────────────────────────────────────
 let _db            = null;
 let _initialized   = false;
-let _lastWriteTime = 0;        // Kendi yazdığımız anı takip et (echo'yu engelle)
+let _lastWriteTime  = 0;       // Kendi yazdığımız anı takip et (echo'yu engelle)
+let _listenerActive = false;    // subscribeToRemoteChanges sadece bir kez kurulur
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 export function initFirebase() {
@@ -101,6 +102,8 @@ export async function saveToFirebase(stateObj) {
  */
 export function subscribeToRemoteChanges(callback) {
   if (!isFirebaseReady()) return;
+  if (_listenerActive) return;   // Zaten dinliyor — tekrar ekleme
+  _listenerActive = true;
 
   onValue(ref(_db, DB_PATH), (snap) => {
     // Kendi az önce yazdığımız veriyi yoksay

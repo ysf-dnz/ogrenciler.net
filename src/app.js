@@ -154,14 +154,6 @@ function init() {
       renderCurrentView();
       applyPermissions();
     }
-    // Gerçek zamanlı değişiklikleri dinle (diğer cihazlar/sekmeler)
-    startRemoteSync(() => {
-      populateActiveUserSelect();
-      populateFilterDropdowns();
-      updateSidebarStats(state);
-      renderCurrentView();
-      applyPermissions();
-    });
   });
 }
 
@@ -205,6 +197,15 @@ function boot() {
 
   // Modüller arası bağlantılar
   wireCallbacks();
+
+  // Gerçek zamanlı Firebase sync — sadece bir kez kur (boot seviyesinde)
+  startRemoteSync(() => {
+    populateActiveUserSelect();
+    populateFilterDropdowns();
+    updateSidebarStats(state);
+    renderCurrentView();
+    applyPermissions();
+  });
 
   // Session restore veya login göster
   if (tryRestoreSession()) {
