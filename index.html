@@ -1,659 +1,189 @@
-<!DOCTYPE html>
-<html lang="tr" data-theme="dark">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Öğrenciler.Net — Minimal Ekip & Görev Takip Uygulaması</title>
-  <meta name="description" content="Öğrenciler.Net, ekipler için geliştirilmiş şık, sade ve hızlı bir Jira alternatifidir. Kanban panosu, detaylı analitik ve ekip yönetimi sunar.">
+bash
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+cat /tmp/ogrenciler.net-edited/src/features/label-manager.js
+Output
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+// src/features/label-manager.js
+// Etiket yönetimi: oluşturma, düzenleme, silme.
+// state.labels dizisini mutate eder ve saveStateAndRerender() çağırır.
 
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+import { $ } from '../ui/dom.js';
+import { state } from '../core/state.js';
+import { generateId, escapeHTML } from '../core/utils.js';
+import { hasPermission } from '../core/permissions.js';
+import { showToast } from '../ui/toast.js';
+import { closeModalAnimated } from '../ui/modal.js';
+import { saveStateAndRerender } from '../router.js';
+import { refreshIcons } from '../ui/dom.js';
 
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+// ---- CRUD işlemleri ----
 
-  <!-- Ambient Background Blobs -->
-  <div class="blob blob-purple"></div>
-  <div class="blob blob-cyan"></div>
+export function addLabel(name, color) {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const newLabel = { id: generateId(), name: trimmed, color };
+  state.labels.push(newLabel);
+  saveStateAndRerender();
+  return newLabel;
+}
 
-  <!-- LOGIN SCREEN -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-card card">
-      <div class="login-hero">
-        <div class="login-logo-icon">
-          <i data-lucide="zap"></i>
-        </div>
-        <h1 class="login-title">Öğrenciler.Net</h1>
-        <p class="text-secondary">Ekip yönetim paneline giriş yapın</p>
-      </div>
-      <div class="login-form">
-        <div class="form-group">
-          <label class="tiny-label" for="login-user-select">Kullanıcı Seçin</label>
-          <select id="login-user-select" class="form-input"></select>
-        </div>
-        <div class="form-group">
-          <label class="tiny-label" for="login-pin">PIN Kodu</label>
-          <input type="password" id="login-pin" class="form-input" maxlength="4" placeholder="••••" inputmode="numeric" autocomplete="off">
-        </div>
-        <button id="btn-login" class="btn-primary btn-full" type="button">Giriş Yap</button>
-        <p id="login-error" class="login-error" aria-live="polite"></p>
-      </div>
-      <div class="login-role-info">
-        <span class="role-badge role-admin"><i data-lucide="shield" class="icon-xs"></i> Admin</span>
-        <span class="role-badge role-member"><i data-lucide="user" class="icon-xs"></i> Üye</span>
-        <span class="role-badge role-viewer"><i data-lucide="eye" class="icon-xs"></i> İzleyici</span>
-      </div>
-    </div>
-  </div>
+export function updateLabel(id, { name, color }) {
+  const label = state.labels.find(l => l.id === id);
+  if (!label) return false;
+  if (name !== undefined) label.name = name.trim() || label.name;
+  if (color !== undefined) label.color = color;
+  saveStateAndRerender();
+  return true;
+}
 
-  <div class="app-container" id="app-container" style="display:none;">
+export function deleteLabel(id) {
+  const idx = state.labels.findIndex(l => l.id === id);
+  if (idx === -1) return false;
+  state.labels.splice(idx, 1);
+  // Tüm görevlerdeki bu etikete ait referansları temizle
+  state.tasks.forEach(t => {
+    if (Array.isArray(t.labels)) {
+      t.labels = t.labels.filter(lid => lid !== id);
+    }
+  });
+  saveStateAndRerender();
+  return true;
+}
 
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-brand">
-        <div class="logo-icon">
-          <i data-lucide="zap" class="pulse-icon"></i>
-        </div>
-        <span class="logo-text">Öğrenciler.Net</span>
-      </div>
+// ---- Modal render ----
 
-      <nav class="sidebar-menu" aria-label="Ana menü">
-        <a href="#kanban" class="menu-item active" data-view="kanban">
-          <i data-lucide="kanban-square"></i>
-          <span>Kanban Pano</span>
-        </a>
-        <a href="#list" class="menu-item" data-view="list">
-          <i data-lucide="list-todo"></i>
-          <span>Görev Listesi</span>
-        </a>
-        <a href="#analytics" class="menu-item" data-view="analytics">
-          <i data-lucide="bar-chart-3"></i>
-          <span>Analiz & Rapor</span>
-        </a>
-        <a href="#team" class="menu-item" data-view="team">
-          <i data-lucide="users"></i>
-          <span>Ekip Üyeleri</span>
-        </a>
-        <a href="#activity" class="menu-item" data-view="activity">
-          <i data-lucide="clock"></i>
-          <span>Aktivite Geçmişi</span>
-        </a>
-        <a href="#roadmap" class="menu-item" data-view="roadmap">
-          <i data-lucide="map"></i>
-          <span>Yol Haritası</span>
-        </a>
-      </nav>
+function renderLabelList() {
+  const list = $('#label-manager-list');
+  if (!list) return;
+  const canManage = hasPermission('canManageMembers'); // admin yetkisi
 
-      <div class="sidebar-stats">
-        <div class="stat-group">
-          <span class="stat-label">Tamamlanan</span>
-          <span class="stat-value" id="sidebar-done-count">0/0</span>
-        </div>
-        <div class="progress-bar-container">
-          <div class="progress-bar-fill shimmer" id="sidebar-progress-bar" style="width: 0%;"></div>
-        </div>
-      </div>
+  if (state.labels.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:8px 0;">Henüz etiket yok.</p>';
+    return;
+  }
 
-      <div class="sidebar-footer">
-        <div class="active-user-selector">
-          <label class="tiny-label" for="active-user-select">Olarak giriş yapıldı:</label>
-          <select id="active-user-select" class="form-input form-input-sm"></select>
-        </div>
-
-        <div class="sidebar-action-group">
-          <button id="btn-export-json" class="btn-ghost" title="JSON olarak dışa aktar" type="button">
-            <i data-lucide="download"></i>
-            <span>Dışa Aktar</span>
-          </button>
-          <button id="btn-import-json" class="btn-ghost" title="JSON dosyasından içe aktar" type="button">
-            <i data-lucide="upload"></i>
-            <span>İçe Aktar</span>
-          </button>
-          <input type="file" id="import-file-input" accept=".json" style="display: none;">
-        </div>
-
-        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Temayı Değiştir" type="button">
-          <i data-lucide="sun" class="sun-icon"></i>
-          <i data-lucide="moon" class="moon-icon"></i>
-          <span class="theme-text">Açık Tema</span>
+  list.innerHTML = state.labels.map(l => `
+    <div class="label-manager-row" data-label-id="${l.id}">
+      <span class="label-color-swatch" style="background:${l.color};" title="${escapeHTML(l.color)}"></span>
+      <input
+        type="text"
+        class="form-input form-input-sm label-name-input"
+        value="${escapeHTML(l.name)}"
+        data-label-id="${l.id}"
+        ${canManage ? '' : 'disabled'}
+        style="flex:1;"
+      >
+      <input
+        type="color"
+        class="label-color-input"
+        value="${l.color}"
+        data-label-id="${l.id}"
+        ${canManage ? '' : 'disabled'}
+        title="Rengi değiştir"
+      >
+      ${canManage ? `
+        <button class="btn-ghost btn-sm btn-label-save" data-label-id="${l.id}" title="Kaydet" type="button">
+          <i data-lucide="check"></i>
         </button>
-
-        <button id="btn-logout" class="btn-ghost btn-logout" title="Çıkış Yap" type="button">
-          <i data-lucide="log-out"></i>
-          <span>Çıkış Yap</span>
+        <button class="btn-ghost btn-sm btn-label-delete" data-label-id="${l.id}" title="Sil" type="button" style="color:var(--danger);">
+          <i data-lucide="trash-2"></i>
         </button>
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-
-      <button id="hamburger-toggle" class="hamburger-btn" aria-label="Menüyü Aç/Kapat" type="button">
-        <i data-lucide="menu"></i>
-      </button>
-
-      <header class="header">
-        <div class="header-left">
-          <h1 id="view-title">Kanban Pano</h1>
-          <p id="view-subtitle" class="text-secondary">Ekibinizin iş akışını görselleştirin ve takip edin.</p>
-        </div>
-
-        <div class="header-right">
-          <div class="search-box">
-            <i data-lucide="search"></i>
-            <input type="text" id="global-search" placeholder="Görev ara... ( / )" aria-label="Görev ara">
-          </div>
-
-          <button id="btn-create-task" class="btn-primary" type="button">
-            <i data-lucide="plus"></i>
-            <span>Yeni Görev</span>
-          </button>
-        </div>
-      </header>
-
-      <div class="keyboard-hint" id="keyboard-hint">
-        <span><kbd>N</kbd>Yeni Görev</span>
-        <span><kbd>1-6</kbd>Görünüm</span>
-        <span><kbd>/</kbd>Ara</span>
-      </div>
-
-      <div class="view-wrapper">
-
-        <!-- KANBAN -->
-        <section id="kanban-view" class="view-section active">
-          <div class="kanban-board" id="kanban-board">
-            <div class="kanban-column" data-status="backlog">
-              <div class="column-header">
-                <div class="header-title-group">
-                  <span class="status-indicator status-backlog"></span>
-                  <h2>Talep Havuzu</h2>
-                  <span class="column-count">0</span>
-                </div>
-              </div>
-              <div class="column-cards" data-status="backlog"></div>
-            </div>
-            <div class="kanban-column" data-status="todo">
-              <div class="column-header">
-                <div class="header-title-group">
-                  <span class="status-indicator status-todo"></span>
-                  <h2>Yapılacaklar</h2>
-                  <span class="column-count">0</span>
-                </div>
-              </div>
-              <div class="column-cards" data-status="todo"></div>
-            </div>
-            <div class="kanban-column" data-status="in-progress">
-              <div class="column-header">
-                <div class="header-title-group">
-                  <span class="status-indicator status-progress"></span>
-                  <h2>Devam Edenler</h2>
-                  <span class="column-count">0</span>
-                </div>
-              </div>
-              <div class="column-cards" data-status="in-progress"></div>
-            </div>
-            <div class="kanban-column" data-status="done">
-              <div class="column-header">
-                <div class="header-title-group">
-                  <span class="status-indicator status-done"></span>
-                  <h2>Tamamlananlar</h2>
-                  <span class="column-count">0</span>
-                </div>
-              </div>
-              <div class="column-cards" data-status="done"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- LIST -->
-        <section id="list-view" class="view-section">
-          <div class="filter-bar card">
-            <div class="filter-inputs">
-              <div class="filter-group">
-                <label for="filter-status">Durum</label>
-                <select id="filter-status" class="form-input">
-                  <option value="all">Tümü</option>
-                  <option value="backlog">Talep Havuzu</option>
-                  <option value="todo">Yapılacaklar</option>
-                  <option value="in-progress">Devam Edenler</option>
-                  <option value="done">Tamamlananlar</option>
-                </select>
-              </div>
-              <div class="filter-group">
-                <label for="filter-priority">Öncelik</label>
-                <select id="filter-priority" class="form-input">
-                  <option value="all">Tümü</option>
-                  <option value="high">Yüksek</option>
-                  <option value="medium">Orta</option>
-                  <option value="low">Düşük</option>
-                </select>
-              </div>
-              <div class="filter-group">
-                <label for="filter-assignee">Sorumlu</label>
-                <select id="filter-assignee" class="form-input"></select>
-              </div>
-              <div class="filter-group">
-                <label for="filter-label">Etiket</label>
-                <select id="filter-label" class="form-input"></select>
-              </div>
-            </div>
-            <button id="btn-clear-filters" class="btn-secondary" type="button">
-              <i data-lucide="filter-x"></i>
-              <span>Temizle</span>
-            </button>
-          </div>
-
-          <div class="bulk-actions-bar card" id="bulk-actions-bar">
-            <div class="bulk-left">
-              <input type="checkbox" id="bulk-select-all" class="subtask-checkbox">
-              <span id="bulk-selected-count">0 görev seçildi</span>
-            </div>
-            <div class="bulk-right">
-              <select id="bulk-status-change" class="form-input form-input-sm">
-                <option value="">Durumu Değiştir</option>
-                <option value="backlog">Talep Havuzu</option>
-                <option value="todo">Yapılacak</option>
-                <option value="in-progress">Devam Eden</option>
-                <option value="done">Tamamlandı</option>
-              </select>
-              <select id="bulk-priority-change" class="form-input form-input-sm">
-                <option value="">Öncelik Değiştir</option>
-                <option value="high">Yüksek</option>
-                <option value="medium">Orta</option>
-                <option value="low">Düşük</option>
-              </select>
-              <button id="btn-bulk-delete" class="btn-danger btn-sm" type="button">
-                <i data-lucide="trash-2"></i>
-                Sil
-              </button>
-            </div>
-          </div>
-
-          <div class="table-container card">
-            <table class="task-table">
-              <thead>
-                <tr>
-                  <th class="th-checkbox"><input type="checkbox" id="table-select-all" class="subtask-checkbox" aria-label="Tümünü seç"></th>
-                  <th class="sortable" data-sort="title">Görev Adı <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable" data-sort="status">Durum <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable" data-sort="priority">Öncelik <i data-lucide="chevrons-up-down"></i></th>
-                  <th>Etiketler</th>
-                  <th class="sortable" data-sort="assignee">Sorumlu <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable" data-sort="dueDate">Bitiş Tarihi <i data-lucide="chevrons-up-down"></i></th>
-                  <th class="sortable" data-sort="progress">Alt Görevler <i data-lucide="chevrons-up-down"></i></th>
-                </tr>
-              </thead>
-              <tbody id="list-table-body"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- ANALYTICS -->
-        <section id="analytics-view" class="view-section">
-          <div class="kpi-grid">
-            <div class="kpi-card card">
-              <div class="kpi-header">
-                <span class="kpi-title">Toplam Görev</span>
-                <div class="kpi-icon icon-blue"><i data-lucide="layers"></i></div>
-              </div>
-              <div class="kpi-value" id="kpi-total-tasks" data-target="0">0</div>
-              <div class="kpi-desc">Projede kayıtlı tüm görevler</div>
-            </div>
-            <div class="kpi-card card">
-              <div class="kpi-header">
-                <span class="kpi-title">Aktif Görevler</span>
-                <div class="kpi-icon icon-purple"><i data-lucide="activity"></i></div>
-              </div>
-              <div class="kpi-value" id="kpi-active-tasks" data-target="0">0</div>
-              <div class="kpi-desc">Henüz tamamlanmamış işler</div>
-            </div>
-            <div class="kpi-card card">
-              <div class="kpi-header">
-                <span class="kpi-title">Tamamlanma Oranı</span>
-                <div class="kpi-icon icon-green"><i data-lucide="check-circle-2"></i></div>
-              </div>
-              <div class="kpi-value" id="kpi-completion-rate" data-target="0">0%</div>
-              <div class="kpi-desc">Başarıyla kapatılan işlerin yüzdesi</div>
-            </div>
-            <div class="kpi-card card">
-              <div class="kpi-header">
-                <span class="kpi-title">Verimlilik Skoru</span>
-                <div class="kpi-icon icon-yellow"><i data-lucide="sparkles"></i></div>
-              </div>
-              <div class="kpi-value" id="kpi-velocity" data-target="0">0</div>
-              <div class="kpi-desc">Zamanında bitirilen işlerin oranı (maks. 100)</div>
-            </div>
-          </div>
-
-          <div class="charts-grid">
-            <div class="chart-card card">
-              <h3>Genel Durum Dağılımı</h3>
-              <div class="radial-chart-container">
-                <svg width="200" height="200" viewBox="0 0 200 200" class="progress-ring-svg">
-                  <circle cx="100" cy="100" r="80" class="ring-bg"></circle>
-                  <circle cx="100" cy="100" r="80" class="ring-fill" id="analytics-ring"></circle>
-                </svg>
-                <div class="radial-chart-label">
-                  <span class="radial-val" id="analytics-percentage">0%</span>
-                  <span class="radial-text">Tamamlandı</span>
-                </div>
-              </div>
-              <div class="status-legend">
-                <div class="legend-item"><span class="legend-dot status-backlog"></span><span>Talep Havuzu: <strong id="legend-backlog-count">0</strong></span></div>
-                <div class="legend-item"><span class="legend-dot status-todo"></span><span>Yapılacak: <strong id="legend-todo-count">0</strong></span></div>
-                <div class="legend-item"><span class="legend-dot status-progress"></span><span>Devam Eden: <strong id="legend-progress-count">0</strong></span></div>
-                <div class="legend-item"><span class="legend-dot status-done"></span><span>Tamamlanan: <strong id="legend-done-count">0</strong></span></div>
-              </div>
-            </div>
-
-            <div class="chart-card card">
-              <h3>Kişi Başına Görev Dağılımı</h3>
-              <div class="bar-chart-container" id="assignee-bar-chart"></div>
-            </div>
-
-            <div class="chart-card card">
-              <h3>Öncelik Dağılımı</h3>
-              <div class="priority-chart-container">
-                <div class="priority-row">
-                  <div class="p-row-header"><span>Yüksek Öncelik</span><span id="priority-count-high">0</span></div>
-                  <div class="progress-bar-container bar-high"><div class="progress-bar-fill" id="priority-bar-high" style="width: 0%;"></div></div>
-                </div>
-                <div class="priority-row">
-                  <div class="p-row-header"><span>Orta Öncelik</span><span id="priority-count-medium">0</span></div>
-                  <div class="progress-bar-container bar-medium"><div class="progress-bar-fill" id="priority-bar-medium" style="width: 0%;"></div></div>
-                </div>
-                <div class="priority-row">
-                  <div class="p-row-header"><span>Düşük Öncelik</span><span id="priority-count-low">0</span></div>
-                  <div class="progress-bar-container bar-low"><div class="progress-bar-fill" id="priority-bar-low" style="width: 0%;"></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- TEAM -->
-        <section id="team-view" class="view-section">
-          <div class="team-actions card">
-            <div class="team-actions-left">
-              <h3>Ekibimiz</h3>
-              <p class="text-secondary" id="team-count-label">Toplam 0 ekip üyesi kayıtlı.</p>
-            </div>
-            <button id="btn-create-member" class="btn-primary" type="button">
-              <i data-lucide="user-plus"></i>
-              <span>Yeni Üye Ekle</span>
-            </button>
-          </div>
-          <div class="team-grid" id="team-cards-container"></div>
-        </section>
-
-        <!-- ACTIVITY -->
-        <section id="activity-view" class="view-section">
-          <div class="activity-header card">
-            <h3>Son Aktiviteler</h3>
-            <button id="btn-clear-activity" class="btn-secondary btn-sm" type="button">
-              <i data-lucide="trash-2"></i>
-              <span>Geçmişi Temizle</span>
-            </button>
-          </div>
-          <div class="activity-timeline" id="activity-list"></div>
-        </section>
-
-        <!-- ROADMAP -->
-        <section id="roadmap-view" class="view-section">
-          <div class="roadmap-container card" id="roadmap-container"></div>
-        </section>
-
-      </div>
-    </main>
-  </div>
-
-  <!-- MODAL: GÖREV DETAY -->
-  <dialog id="modal-task-detail" class="modal-dialog">
-    <div class="modal-content modal-closing-support">
-      <div class="modal-header">
-        <div class="modal-title-area">
-          <span class="modal-task-id" id="detail-task-id">TASK-0</span>
-          <h2 id="detail-task-title-display">Görev Detayı</h2>
-        </div>
-        <button class="btn-close" id="btn-close-detail" aria-label="Kapat" type="button">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-
-      <div class="modal-body-layout">
-        <div class="modal-body-left">
-          <div class="form-group">
-            <label for="edit-title">Görev Başlığı</label>
-            <input type="text" id="edit-title" class="form-input">
-          </div>
-
-          <div class="form-group">
-            <label for="edit-description">Açıklama</label>
-            <textarea id="edit-description" class="form-input form-textarea" rows="4"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Etiketler</label>
-            <div class="label-picker" id="detail-label-picker"></div>
-          </div>
-
-          <div class="subtasks-section">
-            <h3>Alt Görevler</h3>
-            <div class="subtask-progress-group">
-              <div class="progress-bar-container"><div class="progress-bar-fill" id="detail-subtask-progress" style="width: 0%;"></div></div>
-              <span id="detail-subtask-text">0/0 tamamlandı</span>
-            </div>
-            <div class="subtask-list" id="detail-subtasks-list"></div>
-            <div class="add-subtask-bar">
-              <input type="text" id="new-subtask-title" placeholder="Yeni alt görev ekle..." class="form-input">
-              <button id="btn-add-subtask" class="btn-secondary" type="button">Ekle</button>
-            </div>
-          </div>
-
-          <div class="comments-section">
-            <h3>Yorumlar (<span id="detail-comments-count">0</span>)</h3>
-            <div class="comments-list" id="detail-comments-list"></div>
-            <div class="add-comment-bar">
-              <div class="comment-author-picker">
-                <label class="tiny-label" for="comment-author-select">Olarak yorum yap:</label>
-                <select id="comment-author-select" class="form-input form-input-sm"></select>
-              </div>
-              <textarea id="new-comment-text" placeholder="Yorum yazın..." class="form-input form-textarea-small" rows="2"></textarea>
-              <button id="btn-add-comment" class="btn-primary" type="button">Yorum Yap</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-body-right">
-          <div class="form-group">
-            <label for="edit-status">Durum</label>
-            <select id="edit-status" class="form-input">
-              <option value="backlog">Talep Havuzu</option>
-              <option value="todo">Yapılacak</option>
-              <option value="in-progress">Devam Eden</option>
-              <option value="done">Tamamlandı</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="edit-priority">Öncelik</label>
-            <select id="edit-priority" class="form-input">
-              <option value="high">Yüksek</option>
-              <option value="medium">Orta</option>
-              <option value="low">Düşük</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="edit-assignee">Sorumlu</label>
-            <select id="edit-assignee" class="form-input"></select>
-          </div>
-          <div class="form-group">
-            <label for="edit-due-date">Bitiş Tarihi</label>
-            <input type="date" id="edit-due-date" class="form-input">
-          </div>
-
-          <div class="modal-actions-sidebar">
-            <button id="btn-save-task-detail" class="btn-primary btn-full" type="button">Değişiklikleri Kaydet</button>
-            <button id="btn-duplicate-task" class="btn-secondary btn-full" type="button">
-              <i data-lucide="copy"></i> Görevi Kopyala
-            </button>
-            <button id="btn-delete-task" class="btn-danger btn-full" type="button">Görevi Sil</button>
-          </div>
-        </div>
-      </div>
+      ` : ''}
     </div>
-  </dialog>
+  `).join('');
 
-  <!-- MODAL: GÖREV OLUŞTURMA -->
-  <dialog id="modal-task-create" class="modal-dialog">
-    <div class="modal-content modal-content-small modal-closing-support">
-      <div class="modal-header">
-        <h2>Yeni Görev Oluştur</h2>
-        <button class="btn-close" id="btn-close-create" aria-label="Kapat" type="button">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-      <form id="form-create-task" class="modal-body">
-        <div class="form-group">
-          <label for="create-title">Görev Başlığı *</label>
-          <input type="text" id="create-title" class="form-input" placeholder="Görevin konusunu özetleyin..." required>
-        </div>
-        <div class="form-group">
-          <label for="create-description">Açıklama</label>
-          <textarea id="create-description" class="form-input form-textarea" rows="3" placeholder="Görevin detaylarını yazın..."></textarea>
-        </div>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label for="create-status">Durum</label>
-            <select id="create-status" class="form-input">
-              <option value="todo">Yapılacak</option>
-              <option value="backlog">Talep Havuzu</option>
-              <option value="in-progress">Devam Eden</option>
-              <option value="done">Tamamlandı</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="create-priority">Öncelik</label>
-            <select id="create-priority" class="form-input">
-              <option value="medium">Orta</option>
-              <option value="high">Yüksek</option>
-              <option value="low">Düşük</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label for="create-assignee">Sorumlu</label>
-            <select id="create-assignee" class="form-input"></select>
-          </div>
-          <div class="form-group">
-            <label for="create-due-date">Bitiş Tarihi</label>
-            <input type="date" id="create-due-date" class="form-input">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Etiketler</label>
-          <div class="label-picker" id="create-label-picker"></div>
-        </div>
-        <div class="modal-footer-actions">
-          <button type="button" class="btn-secondary" id="btn-cancel-create">Vazgeç</button>
-          <button type="submit" class="btn-primary">Görev Oluştur</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
+  refreshIcons(list);
 
-  <!-- MODAL: EKİP ÜYESİ EKLEME -->
-  <dialog id="modal-member-create" class="modal-dialog">
-    <div class="modal-content modal-content-small modal-closing-support">
-      <div class="modal-header">
-        <h2>Yeni Ekip Üyesi Ekle</h2>
-        <button class="btn-close" id="btn-close-member" aria-label="Kapat" type="button">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-      <form id="form-create-member" class="modal-body">
-        <div class="form-group">
-          <label for="member-name">Ad Soyad *</label>
-          <input type="text" id="member-name" class="form-input" placeholder="Örn. Can Yılmaz" required>
-        </div>
-        <div class="form-group">
-          <label for="member-role">Rol / Ünvan *</label>
-          <input type="text" id="member-role" class="form-input" placeholder="Örn. Mobil Geliştirici" required>
-        </div>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label for="member-avatar">Kısaltma</label>
-            <input type="text" id="member-avatar" class="form-input" maxlength="2" placeholder="Örn. CY">
-          </div>
-          <div class="form-group">
-            <label for="member-pin">PIN Kodu</label>
-            <input type="password" id="member-pin" class="form-input" maxlength="4" placeholder="4 haneli" inputmode="numeric">
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="member-system-role">Sistem Rolü</label>
-          <select id="member-system-role" class="form-input">
-            <option value="member">Üye — Sınırlı Yetki</option>
-            <option value="admin">Admin — Tam Yetki</option>
-            <option value="viewer">İzleyici — Salt Okunur</option>
-          </select>
-        </div>
-        <div class="modal-footer-actions">
-          <button type="button" class="btn-secondary" id="btn-cancel-member">Vazgeç</button>
-          <button type="submit" class="btn-primary">Üye Ekle</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
+  // Kaydet butonları
+  list.querySelectorAll('.btn-label-save').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.labelId;
+      const nameInput = list.querySelector(`.label-name-input[data-label-id="${id}"]`);
+      const colorInput = list.querySelector(`.label-color-input[data-label-id="${id}"]`);
+      const ok = updateLabel(id, {
+        name: nameInput?.value || '',
+        color: colorInput?.value || '#8b5cf6'
+      });
+      if (ok) {
+        showToast('Etiket güncellendi.', 'success');
+        renderLabelList();
+      }
+    });
+  });
 
-  <!-- MODAL: ONBOARDING -->
-  <dialog id="modal-onboarding" class="modal-dialog">
-    <div class="modal-content modal-content-small modal-closing-support onboarding-content">
-      <div class="onboarding-hero">
-        <div class="onboarding-icon">
-          <i data-lucide="zap"></i>
-        </div>
-        <h2>Öğrenciler.Net'e Hoş Geldiniz! 🚀</h2>
-        <p class="text-secondary">Modern ekipler için minimal görev ve proje yönetim aracı.</p>
-      </div>
-      <div class="onboarding-steps">
-        <div class="onboarding-step">
-          <div class="step-num">1</div>
-          <div><strong>Kanban Pano</strong> ile görevleri sütunlar arasında sürükleyip bırakın.</div>
-        </div>
-        <div class="onboarding-step">
-          <div class="step-num">2</div>
-          <div><strong>Görev Listesi</strong>'nde arama, filtreleme ve toplu işlem yapın.</div>
-        </div>
-        <div class="onboarding-step">
-          <div class="step-num">3</div>
-          <div><strong>Analiz</strong> panelinden ekip verimliliğini takip edin.</div>
-        </div>
-        <div class="onboarding-step">
-          <div class="step-num">4</div>
-          <div><kbd>N</kbd> ile yeni görev, <kbd>/</kbd> ile hızlı arama yapın.</div>
-        </div>
-      </div>
-      <div class="onboarding-actions">
-        <button id="btn-onboarding-clean" class="btn-secondary" type="button">Demo Verileri Temizle</button>
-        <button id="btn-onboarding-start" class="btn-primary" type="button">Başlayalım!</button>
-      </div>
-    </div>
-  </dialog>
+  // Silme butonları
+  list.querySelectorAll('.btn-label-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.labelId;
+      const label = state.labels.find(l => l.id === id);
+      const usedIn = state.tasks.filter(t => t.labels?.includes(id)).length;
+      const msg = usedIn > 0
+        ? `"${label?.name}" etiketi ${usedIn} görevde kullanılıyor. Silmek istediğinize emin misiniz?`
+        : `"${label?.name}" etiketini silmek istiyor musunuz?`;
+      if (!confirm(msg)) return;
+      deleteLabel(id);
+      showToast('Etiket silindi.', 'info');
+      renderLabelList();
+    });
+  });
 
-  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+  // Renk değişince swatch'ı anlık güncelle
+  list.querySelectorAll('.label-color-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const swatch = input.closest('.label-manager-row')?.querySelector('.label-color-swatch');
+      if (swatch) swatch.style.background = input.value;
+    });
+  });
+}
 
-  <!-- Tek modül girişi — diğer her şey import yoluyla yüklenir -->
-  <script type="module" src="src/app.js"></script>
-</body>
-</html>
+// ---- Modal init ----
+
+export function initLabelManager() {
+  const modal = $('#modal-label-manager');
+  const btnOpen = $('#btn-manage-labels');
+  const btnClose = $('#btn-close-label-manager');
+  const btnAdd = $('#btn-add-label');
+  const nameInput = $('#new-label-name');
+  const colorInput = $('#new-label-color');
+
+  if (btnOpen) {
+    btnOpen.addEventListener('click', () => {
+      if (!hasPermission('canManageMembers')) {
+        showToast('Etiket yönetimi için admin yetkisi gerekli.', 'error');
+        return;
+      }
+      renderLabelList();
+      modal?.showModal();
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => closeModalAnimated(modal));
+  }
+
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      const name = nameInput?.value?.trim();
+      if (!name) {
+        showToast('Etiket adı boş olamaz.', 'error');
+        return;
+      }
+      const color = colorInput?.value || '#8b5cf6';
+      addLabel(name, color);
+      showToast(`"${name}" etiketi eklendi.`, 'success');
+      if (nameInput) nameInput.value = '';
+      if (colorInput) colorInput.value = '#8b5cf6';
+      renderLabelList();
+    });
+  }
+
+  // Enter ile de ekleme
+  if (nameInput) {
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        btnAdd?.click();
+      }
+    });
+  }
+}
