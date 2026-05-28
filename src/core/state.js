@@ -2,6 +2,8 @@
 // Uygulama state'inin tek kaynağı. Modüller direkt 'state' import edip okur,
 // ama yazmak için saveState() çağırması gerekir.
 
+import { saveToFirebase, loadFromFirebase, subscribeToRemoteChanges, initFirebase, isFirebaseReady } from './firebase.js';
+
 import { DEFAULT_TASKS, DEFAULT_MEMBERS, DEFAULT_LABELS } from '../data.js';
 
 const STORAGE_KEY = 'zenflow_state';
@@ -95,6 +97,12 @@ export function saveState() {
       console.error('ZenFlow: localStorage yazımı doğrulanamadı.');
       return false;
     }
+    // Firebase'e de kaydet (async, hata uygulamayı durdurmaz)
+    if (isFirebaseReady()) {
+      saveToFirebase(state).catch(e =>
+        console.warn('[Firebase] Arka plan kayıt hatası:', e)
+      );
+    }
     return true;
   } catch (e) {
     console.error('ZenFlow state kaydedilirken hata:', e);
@@ -116,4 +124,60 @@ export function resetState() {
 // Multi-tab sync için dış dünyadan state'i yeniden yükle
 export function reloadStateFromStorage() {
   replaceState(loadState());
+}
+
+// ─── Firebase Senkronizasyonu ─────────────────────────────────────────────────
+
+/**
+ * Uygulama başlangıcında Firebase'den veriyi çekip state'i günceller.
+ * localStorage'daki cihaza özgü alanlar (loggedInUserId, activeUserId) korunur.
+ * @returns {Promise<boolean>} Firebase'den veri yüklendi mi
+ */
+export async function syncFromFirebase() {
+  // Firebase başlatılmamışsa başlat
+  if (!isFirebaseReady()) {
+    initFirebase();
+  }
+  if (!isFirebaseReady()) return false;
+
+  const remoteData = await loadFromFirebase();
+  if (!remoteData) return false;
+
+  // Cihaza özgü alanları koru
+  const localAuth = {
+    loggedInUserId: state.loggedInUserId,
+    activeUserId:   state.activeUserId
+  };
+
+  // State'i güncelle
+  Object.assign(state, remoteData, localAuth);
+  migrate(state);
+
+  // Yerel cache'i de güncelle
+  try {
+    localStorage.setItem('zenflow_state', JSON.stringify(state));
+  } catch (_) {}
+
+  return true;
+}
+
+/**
+ * Başka cihazlardan gelen gerçek zamanlı değişiklikleri dinler.
+ * @param {function} rerenderCallback — state güncellendikten sonra çalışır
+ */
+export function startRemoteSync(rerenderCallback) {
+  if (!isFirebaseReady()) return;
+
+  subscribeToRemoteChanges((remoteData) => {
+    const localAuth = {
+      loggedInUserId: state.loggedInUserId,
+      activeUserId:   state.activeUserId
+    };
+    Object.assign(state, remoteData, localAuth);
+    migrate(state);
+    try {
+      localStorage.setItem('zenflow_state', JSON.stringify(state));
+    } catch (_) {}
+    rerenderCallback();
+  });
 }

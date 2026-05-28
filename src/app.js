@@ -2,7 +2,8 @@
 // Tüm modülleri başlatır, render fonksiyonlarını router'a kayıt eder,
 // ve modüller arası callback iletişimini kurar.
 
-import { state, saveState, reloadStateFromStorage } from './core/state.js';
+import { state, saveState, reloadStateFromStorage, syncFromFirebase, startRemoteSync } from './core/state.js';
+import { initFirebase } from './core/firebase.js';
 import { escapeHTML } from './core/utils.js';
 
 import { $ } from './ui/dom.js';
@@ -143,10 +144,32 @@ function init() {
   checkOnboarding();
   refreshIcons();
   applyPermissions();
+
+  // Firebase'den güncel veriyi çek ve UI'ı güncelle
+  syncFromFirebase().then(synced => {
+    if (synced) {
+      populateActiveUserSelect();
+      populateFilterDropdowns();
+      updateSidebarStats(state);
+      renderCurrentView();
+      applyPermissions();
+    }
+    // Gerçek zamanlı değişiklikleri dinle (diğer cihazlar/sekmeler)
+    startRemoteSync(() => {
+      populateActiveUserSelect();
+      populateFilterDropdowns();
+      updateSidebarStats(state);
+      renderCurrentView();
+      applyPermissions();
+    });
+  });
 }
 
 // -------- Boot --------
 function boot() {
+  // Firebase'i hemen başlat — en önce
+  initFirebase();
+
   // Tema (login ekranında da geçerli)
   initTheme();
   initThemeToggle();
