@@ -2618,33 +2618,115 @@ html[data-theme='light'] .roadmap-month {
   opacity: 0.5;
 }
 
+/* ==============================================================
+   RESPONSIVE SYSTEM — Tam Refaktör
+   Breakpoints:
+     ≤1400px  — geniş laptop
+     ≤1200px  — standart laptop / küçük masaüstü
+     ≤1024px  — tablet landscape / küçük laptop
+     ≤768px   — tablet portrait
+     ≤600px   — büyük telefon
+     ≤480px   — standart telefon
+     ≤360px   — küçük telefon
+   ============================================================== */
+
 /* ----------------------------------------------------------
-   39. RESPONSIVE — 1200px
+   A. BLOB — büyük ekranlarda sabit
+   ---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .blob {
+    width: 300px;
+    height: 300px;
+    filter: blur(80px);
+    opacity: 0.12;
+  }
+}
+
+@media (max-width: 480px) {
+  .blob {
+    width: 200px;
+    height: 200px;
+    filter: blur(60px);
+    opacity: 0.08;
+  }
+}
+
+/* ----------------------------------------------------------
+   B. 1400px — geniş layout
+   ---------------------------------------------------------- */
+
+@media (max-width: 1400px) {
+  .main-content {
+    padding: 32px;
+  }
+}
+
+/* ----------------------------------------------------------
+   C. 1200px — standart laptop
    ---------------------------------------------------------- */
 
 @media (max-width: 1200px) {
-  .kanban-board {
+  /* KPI 4→2 */
+  .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* Charts 3 kolon → tek kolon */
   .charts-grid {
     grid-template-columns: 1fr;
   }
 
-  .team-grid {
+  /* Kanban 4→2 */
+  .kanban-board {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .kpi-grid {
+  /* Ekip kartları 4→2 */
+  .team-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 /* ----------------------------------------------------------
-   40. RESPONSIVE — 900px
+   D. 1024px — tablet landscape / küçük laptop
+   ---------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .app-container {
+    grid-template-columns: 220px 1fr;
+  }
+
+  .sidebar {
+    padding: 24px 16px;
+  }
+
+  .main-content {
+    padding: 28px;
+  }
+
+  .header h1 {
+    font-size: 26px;
+  }
+
+  /* Görev tablosu: az yer kaplayan kolonları gizle */
+  .task-table th:nth-child(5),  /* Etiketler */
+  .task-table td:nth-child(5) {
+    display: none;
+  }
+
+  /* Kanban kartları biraz sıkıştır */
+  .task-card {
+    padding: 12px;
+  }
+}
+
+/* ----------------------------------------------------------
+   E. 900px — sidebar hamburger menüye geçiş
    ---------------------------------------------------------- */
 
 @media (max-width: 900px) {
+  /* Layout: tek kolon, sidebar overlay */
   .app-container {
     grid-template-columns: 1fr;
   }
@@ -2653,15 +2735,19 @@ html[data-theme='light'] .roadmap-month {
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
-    z-index: 100;
-    width: 260px;
+    height: 100%;
+    height: 100dvh;
+    width: 280px;
+    z-index: 200;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 24px 20px;
+    overflow-y: auto;
   }
 
   .sidebar.open {
     transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(0, 0, 0, 0.4);
   }
 
   .hamburger-btn {
@@ -2669,75 +2755,789 @@ html[data-theme='light'] .roadmap-month {
   }
 
   .main-content {
-    padding: 20px;
-    padding-top: 68px;
+    padding: 20px 20px 40px;
+    padding-top: 72px; /* hamburger alanı */
+    max-height: 100vh;
+    max-height: 100dvh;
   }
 
-  .modal-content {
-    width: 95vw;
-  }
-
-  .modal-body-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ----------------------------------------------------------
-   41. RESPONSIVE — 600px
-   ---------------------------------------------------------- */
-
-@media (max-width: 600px) {
-  .kanban-board {
-    grid-template-columns: 1fr;
-  }
-
-  .kpi-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .team-grid {
-    grid-template-columns: 1fr;
-  }
-
+  /* Header düzeni */
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 14px;
   }
 
-  .search-box {
-    width: 100%;
-  }
-
-  .search-box input {
-    width: 100%;
+  .header h1 {
+    font-size: 24px;
   }
 
   .header-right {
     width: 100%;
+    gap: 10px;
+  }
+
+  .search-box {
+    flex: 1;
+  }
+
+  .search-box input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #btn-create-task {
+    flex-shrink: 0;
+  }
+
+  /* Keyboard hint gizle — mobilde yer yok */
+  .keyboard-hint {
+    display: none;
+  }
+
+  /* Modal */
+  .modal-content {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    border-radius: var(--radius-md);
+  }
+
+  .modal-content-small {
+    width: calc(100vw - 24px);
+  }
+
+  .modal-body-layout {
+    grid-template-columns: 1fr;
+    max-height: none;
+    padding: 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+  }
+
+  /* Task tablosu: daha fazla kolon gizle */
+  .task-table th:nth-child(5),
+  .task-table td:nth-child(5),
+  .task-table th:nth-child(7),
+  .task-table td:nth-child(7),
+  .task-table th:nth-child(8),
+  .task-table td:nth-child(8) {
+    display: none;
+  }
+
+  /* KPI 2 kolon kalsın */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Kanban 2 kolon kalsın */
+  .kanban-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Ekip kartları 2→1 küçük kartlar */
+  .team-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Team actions */
+  .team-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+  }
+
+  .team-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .filter-inputs {
+    gap: 10px;
+  }
+
+  .filter-group {
+    min-width: calc(50% - 5px);
+    flex: 1 1 calc(50% - 5px);
+  }
+
+  /* Bulk actions */
+  .bulk-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .bulk-right {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Roadmap scroll */
+  .roadmap-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Toast küçük ekranlarda */
+  .toast {
+    min-width: 260px;
+    max-width: calc(100vw - 32px);
+  }
+
+  .toast-container {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+}
+
+/* ----------------------------------------------------------
+   F. 768px — tablet portrait
+   ---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 16px 40px;
+    padding-top: 68px;
+    gap: 20px;
+  }
+
+  .header h1 {
+    font-size: 22px;
+  }
+
+  .header-left p.text-secondary {
+    font-size: 13px;
+  }
+
+  /* Kanban: 1 kolon */
+  .kanban-board {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .kanban-column {
+    min-height: 200px;
+  }
+
+  .column-cards {
+    min-height: 100px;
+  }
+
+  /* KPI: 2 kolon kalsın */
+  .kpi-grid {
+    gap: 12px;
+  }
+
+  .kpi-card {
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .kpi-value {
+    font-size: 26px;
+  }
+
+  /* Chart kartları */
+  .chart-card {
+    padding: 16px;
+    gap: 16px;
+    min-height: auto;
+  }
+
+  /* Ekip kartları 2 kolon → 1 kolon geçiş tablet'te */
+  .team-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  /* Tablo: yatay kaydırma ile görünür, temel kolonlar */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+  }
+
+  .task-table {
+    min-width: 560px;
+  }
+
+  .task-table th,
+  .task-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Activity */
+  .activity-item {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  /* Modal body layout: zaten 1 kolon */
+  .modal-body-left,
+  .modal-body-right {
+    width: 100%;
+  }
+
+  /* Modal footer butonları */
+  .modal-footer-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-footer-actions .btn-primary,
+  .modal-footer-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Form grid 2→1 */
+  .form-row-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ----------------------------------------------------------
+   G. 600px — büyük telefon
+   ---------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  /* Header */
+  .header {
+    gap: 12px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .header-right {
     flex-wrap: wrap;
   }
 
-  .form-row-2 {
-    grid-template-columns: 1fr;
+  .search-box input {
+    font-size: 14px;
+    padding: 9px 12px 9px 34px;
   }
 
+  /* Arama ikonu */
+  .search-box > i {
+    left: 10px;
+  }
+
+  /* KPI 2→1 */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Ekip 1 kolon */
+  .team-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .team-card {
+    padding: 20px;
+    flex-direction: row;
+    text-align: left;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .team-avatar-lg,
+  .team-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .team-info {
+    align-items: flex-start;
+    flex-grow: 1;
+  }
+
+  .team-info h3,
+  .team-name {
+    font-size: 15px;
+  }
+
+  .team-stats {
+    justify-content: flex-start;
+    gap: 20px;
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+
+  /* Filter bar: 2 kolon filtre */
   .filter-inputs {
     flex-direction: column;
   }
 
   .filter-group {
     min-width: 100%;
+    flex: 1 1 100%;
   }
 
-  .bulk-actions-bar {
+  .filter-bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
+  }
+
+  .filter-bar > .btn-secondary {
+    align-self: flex-start;
+  }
+
+  /* Login */
+  .login-card {
+    margin: 0 12px;
+    max-width: 100%;
+  }
+
+  .login-hero {
+    padding: 28px 20px 16px;
+  }
+
+  .login-form {
+    padding: 0 20px 20px;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+
+  /* Onboarding */
+  .onboarding-hero {
+    padding: 28px 20px 16px;
+  }
+
+  .onboarding-steps {
+    padding: 0 20px 16px;
+  }
+
+  .onboarding-actions {
+    padding: 16px 20px;
+    flex-direction: column-reverse;
+  }
+
+  .onboarding-actions > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Modal butonlar */
+  .modal-footer-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-footer-actions > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Activity header */
+  .activity-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  /* Toast */
+  .toast-container {
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 14px;
+    font-size: 12px;
+  }
+
+  /* Sidebar stats */
+  .sidebar-stats {
+    padding: 12px;
   }
 }
 
-/* ===== Etiket Yönetimi ===== */
+/* ----------------------------------------------------------
+   H. 480px — standart telefon
+   ---------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px 12px 40px;
+    padding-top: 64px;
+    gap: 14px;
+  }
+
+  .hamburger-btn {
+    top: 12px;
+    left: 12px;
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Header */
+  .header h1 {
+    font-size: 18px;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
+
+  #btn-create-task span {
+    display: none; /* Sadece ikon göster — yer kazanımı */
+  }
+
+  #btn-create-task {
+    padding: 10px 12px;
+    min-width: 42px;
+    justify-content: center;
+  }
+
+  /* KPI 1 kolon */
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .kpi-card {
+    padding: 14px 16px;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .kpi-header {
+    flex: 1;
+    flex-direction: row-reverse;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  /* Charts */
+  .chart-card {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .chart-card h3 {
+    font-size: 14px;
+  }
+
+  /* Radial chart küçüt */
+  .progress-ring-svg {
+    width: 160px !important;
+    height: 160px !important;
+  }
+
+  .radial-val {
+    font-size: 26px;
+  }
+
+  /* Kanban */
+  .kanban-board {
+    gap: 12px;
+  }
+
+  .kanban-column {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .task-card {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .card-title {
+    font-size: 13px;
+  }
+
+  .card-desc,
+  .card-description {
+    font-size: 11px;
+  }
+
+  /* Modal daha sıkışık padding */
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-body {
+    padding: 14px 16px;
+    gap: 14px;
+  }
+
+  .modal-body-layout {
+    padding: 14px 16px;
+    gap: 14px;
+  }
+
+  /* Team cards — yatay */
+  .team-card {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .team-avatar-lg,
+  .team-avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 16px;
+  }
+
+  .team-info h3,
+  .team-name {
+    font-size: 14px;
+  }
+
+  /* Sidebar genişliği küçüt */
+  .sidebar {
+    width: 260px;
+  }
+
+  /* Label manager */
+  .label-add-row {
+    flex-wrap: wrap;
+  }
+
+  .label-add-row .form-input {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  /* Activity */
+  .activity-timeline {
+    padding-left: 8px;
+  }
+
+  .activity-item {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .activity-body {
+    gap: 2px;
+  }
+
+  /* Login */
+  .login-card {
+    margin: 0 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .login-hero {
+    padding: 24px 16px 14px;
+  }
+
+  .login-logo-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 22px;
+    border-radius: 12px;
+  }
+
+  .login-title {
+    font-size: 20px;
+  }
+
+  .login-form {
+    padding: 0 16px 16px;
+    gap: 12px;
+  }
+
+  .login-role-info {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  /* Butonlar mobil */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}
+
+/* ----------------------------------------------------------
+   I. 360px — çok küçük telefon
+   ---------------------------------------------------------- */
+
+@media (max-width: 360px) {
+  .main-content {
+    padding: 10px 10px 40px;
+    padding-top: 60px;
+    gap: 12px;
+  }
+
+  .hamburger-btn {
+    width: 36px;
+    height: 36px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .header h1 {
+    font-size: 16px;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-radius: 0;
+  }
+
+  .kpi-card {
+    padding: 12px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+  }
+
+  .task-card {
+    padding: 10px;
+  }
+
+  .modal-content,
+  .modal-content-small {
+    width: 100vw;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .toast {
+    font-size: 11px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .team-card {
+    padding: 12px;
+    gap: 10px;
+  }
+}
+
+/* ----------------------------------------------------------
+   J. TABLE RESPONSIVE — 768px altında kart moduna geç
+   ---------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  /* Kolon başlıklarından bazılarını gizle */
+  .task-table th:nth-child(5),
+  .task-table td:nth-child(5),
+  .task-table th:nth-child(8),
+  .task-table td:nth-child(8) {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Tablo yatay kaydırma ile, temel 4 kolon görünür */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .task-table {
+    min-width: 500px;
+  }
+
+  .task-table th,
+  .task-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* Etiketler, bitiş tarihi, alt görevler gizle */
+  .task-table th:nth-child(5),
+  .task-table td:nth-child(5),
+  .task-table th:nth-child(7),
+  .task-table td:nth-child(7),
+  .task-table th:nth-child(8),
+  .task-table td:nth-child(8) {
+    display: none;
+  }
+
+  /* Checkbox kolonu */
+  .task-table th:nth-child(1),
+  .task-table td:nth-child(1) {
+    padding: 10px 8px;
+    width: 32px;
+  }
+}
+
+/* ----------------------------------------------------------
+   K. MODAL — Safe Area (iPhone notch / Dynamic Island)
+   ---------------------------------------------------------- */
+
+@supports (padding: max(0px)) {
+  @media (max-width: 900px) {
+    .modal-content {
+      max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .toast-container {
+      bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+
+    .hamburger-btn {
+      top: calc(14px + env(safe-area-inset-top));
+    }
+
+    .main-content {
+      padding-top: calc(68px + env(safe-area-inset-top));
+      padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    }
+  }
+}
+
+/* ----------------------------------------------------------
+   L. ETIKET YÖNETİMİ — Responsive
+   ---------------------------------------------------------- */
+
 .team-header-actions {
   display: flex;
   gap: 8px;
@@ -2750,7 +3550,19 @@ html[data-theme='light'] .roadmap-month {
   align-items: center;
   gap: 8px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
+}
+
+@media (max-width: 480px) {
+  .label-manager-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .label-manager-row .form-input {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
 }
 
 .label-color-swatch {
@@ -2758,7 +3570,7 @@ html[data-theme='light'] .roadmap-month {
   height: 20px;
   border-radius: 4px;
   flex-shrink: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color);
 }
 
 .label-color-input {
@@ -2768,7 +3580,7 @@ html[data-theme='light'] .roadmap-month {
   border-radius: 6px !important;
   cursor: pointer;
   flex-shrink: 0;
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--border-color) !important;
   background: transparent;
 }
 
@@ -2777,7 +3589,7 @@ html[data-theme='light'] .roadmap-month {
   gap: 8px;
   align-items: center;
   padding-top: 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-color);
   flex-wrap: wrap;
 }
 
@@ -2793,4 +3605,270 @@ html[data-theme='light'] .roadmap-month {
 .btn-label-save, .btn-label-delete {
   padding: 4px 8px !important;
   min-width: unset !important;
+}
+
+/* ----------------------------------------------------------
+   M. SIDEBAR OVERLAY — z-index hiyerarşisi
+   ---------------------------------------------------------- */
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 199;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ----------------------------------------------------------
+   N. TOUCH IMPROVEMENTS
+   ---------------------------------------------------------- */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Dokunmatik cihazlarda hover efektleri devre dışı */
+  .task-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-primary:hover {
+    transform: none;
+    box-shadow: 0 4px 16px var(--accent-purple-glow);
+  }
+
+  .roadmap-bar:hover {
+    transform: none;
+  }
+
+  /* Dokunma hedeflerini büyüt */
+  .menu-item {
+    padding: 14px 16px;
+    min-height: 44px;
+  }
+
+  .btn-close {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .subtask-checkbox {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Scrollbar gizle dokunmatlarda */
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+}
+
+/* ----------------------------------------------------------
+   O. PRINT — yazdırma desteği
+   ---------------------------------------------------------- */
+
+@media print {
+  .sidebar,
+  .hamburger-btn,
+  .toast-container,
+  .keyboard-hint,
+  .blob,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-ghost,
+  .modal-dialog {
+    display: none !important;
+  }
+
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+
+  .main-content {
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  body {
+    overflow: visible;
+  }
+}
+
+/* ----------------------------------------------------------
+   P. TABLE → CARD DÖNÜŞÜMÜ — 480px altı
+   ---------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  /* Tablo sarmalayıcı - normal overflow */
+  .table-container {
+    overflow-x: visible;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Tablo elementlerini block'a çevir */
+  .task-table,
+  .task-table thead,
+  .task-table tbody,
+  .task-table th,
+  .task-table td,
+  .task-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  /* Başlık satırını gizle (etiketler CSS ile gösterilecek) */
+  .task-table thead {
+    display: none;
+  }
+
+  /* Her satır = kart */
+  .task-table tbody tr {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    cursor: pointer;
+    transition: var(--transition-quick);
+  }
+
+  .task-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .task-table tbody tr:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card-hover);
+  }
+
+  /* Hücre içindeki kenarlığı kaldır */
+  .task-table td {
+    padding: 0;
+    border: none;
+    font-size: 13px;
+  }
+
+  /* Checkbox — sağ üst köşeye */
+  .task-table td:nth-child(1) {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: auto;
+  }
+
+  /* Görev adı — büyük ve kalın */
+  .task-table td:nth-child(2) {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding-right: 32px; /* checkbox için boşluk */
+    line-height: 1.4;
+  }
+
+  /* Durum + Öncelik — yan yana */
+  .task-table td:nth-child(3),
+  .task-table td:nth-child(4) {
+    display: inline-flex;
+    width: auto;
+  }
+
+  .task-table td:nth-child(3) {
+    margin-right: 6px;
+  }
+
+  /* Etiketler — tam genişlik */
+  .task-table td:nth-child(5) {
+    display: flex !important; /* önceki "none" kuralını ezmek için */
+  }
+
+  .table-labels-cell {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Sorumlu */
+  .task-table td:nth-child(6) {
+    display: flex;
+  }
+
+  .table-assignee-cell {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  /* Bitiş tarihi */
+  .task-table td:nth-child(7) {
+    display: block !important; /* önceki "none" kuralını ezmek */
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Alt görevler */
+  .task-table td:nth-child(8) {
+    display: block !important;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Status + priority satırı */
+  .task-table td:nth-child(3) ~ td:nth-child(4) {
+    display: inline-flex;
+  }
+
+  /* Alt satır: tarih ve alt görev yan yana */
+  .task-table td:nth-child(7):not(:empty)::before {
+    content: "📅 ";
+    font-size: 10px;
+  }
+
+  .task-table td:nth-child(8):not([textContent="-"])::before {
+    content: "☑ ";
+    font-size: 10px;
+  }
+
+  /* Boş hücreleri gizle */
+  .task-table td:empty {
+    display: none;
+  }
+
+  /* Bulk actions bar tamamen dikey */
+  .bulk-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .bulk-right {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bulk-right .form-input,
+  .bulk-right .btn-danger {
+    width: 100%;
+    justify-content: center;
+  }
 }
