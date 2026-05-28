@@ -1,6 +1,11 @@
+bash
+
+cat /tmp/ogrenciler.net-edited/src/features/member-create.js
+Output
+
 // src/features/member-create.js
 import { $ } from '../ui/dom.js';
-import { state } from '../core/state.js';
+import { state, saveState } from '../core/state.js';
 import { generateId, MEMBER_COLORS } from '../core/utils.js';
 import { hasPermission } from '../core/permissions.js';
 import { pushUndo } from '../core/undo.js';
@@ -39,16 +44,17 @@ export function initMemberCreate() {
       const name = ($('#member-name')?.value || '').trim();
       if (!name) return;
 
-      pushUndo();
-
+      const role = ($('#member-role')?.value || '').trim() || 'Üye';
       const avatarInput = ($('#member-avatar')?.value || '').trim();
-      const avatar = avatarInput || name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const avatar = avatarInput
+        ? avatarInput.toUpperCase().slice(0, 2)
+        : name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
       const color = MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)];
 
       const newMember = {
         id: generateId(),
         name,
-        role: ($('#member-role')?.value || '').trim() || 'Üye',
+        role,
         systemRole: ($('#member-system-role')?.value || 'member'),
         pin: ($('#member-pin')?.value || '').trim() || '0000',
         avatar,
@@ -56,8 +62,17 @@ export function initMemberCreate() {
         joinedDate: new Date().toISOString()
       };
 
+      pushUndo();
       state.members.push(newMember);
       logActivity('üye_eklendi', null, newMember.name);
+
+      // saveStateAndRerender hem kayıt eder hem yeniler;
+      // saveState() false döndürürse uyar ama state mutasyonu geri alınmaz
+      const saved = saveState();
+      if (!saved) {
+        showToast('⚠️ Veri kaydedilemedi — tarayıcı depolamasını kontrol edin.', 'error');
+      }
+
       closeModalAnimated(modal);
       if (onMemberAdded) onMemberAdded();
       saveStateAndRerender();
