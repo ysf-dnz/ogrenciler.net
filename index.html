@@ -388,10 +388,16 @@
               <h3>Ekibimiz</h3>
               <p class="text-secondary" id="team-count-label">Toplam 0 ekip üyesi kayıtlı.</p>
             </div>
-            <button id="btn-create-member" class="btn-primary" type="button">
-              <i data-lucide="user-plus"></i>
-              <span>Yeni Üye Ekle</span>
-            </button>
+            <div class="team-header-actions">
+              <button id="btn-manage-labels" class="btn-secondary" type="button">
+                <i data-lucide="tag"></i>
+                <span>Etiketleri Yönet</span>
+              </button>
+              <button id="btn-create-member" class="btn-primary" type="button">
+                <i data-lucide="user-plus"></i>
+                <span>Yeni Üye Ekle</span>
+              </button>
+            </div>
           </div>
           <div class="team-grid" id="team-cards-container"></div>
         </section>
@@ -615,7 +621,31 @@
       </form>
     </div>
   </dialog>
-
+<!-- MODAL: ETİKET YÖNETİMİ -->
+  <dialog id="modal-label-manager" class="modal-dialog">
+    <div class="modal-content modal-content-small modal-closing-support">
+      <div class="modal-header">
+        <h2>Etiket Yönetimi</h2>
+        <button class="btn-close" id="btn-close-label-manager" aria-label="Kapat" type="button">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary" style="margin-bottom:12px;font-size:13px;">
+          Görevlerde kullanılan etiketleri buradan oluşturabilir, düzenleyebilir ve silebilirsiniz.
+        </p>
+        <div id="label-manager-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+        <div class="label-add-row">
+          <input type="text" id="new-label-name" class="form-input" placeholder="Yeni etiket adı..." style="flex:1;">
+          <input type="color" id="new-label-color" class="form-input label-color-picker" value="#8b5cf6" title="Renk seç">
+          <button id="btn-add-label" class="btn-primary" type="button">
+            <i data-lucide="plus"></i>
+            <span>Ekle</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
   <!-- MODAL: ONBOARDING -->
   <dialog id="modal-onboarding" class="modal-dialog">
     <div class="modal-content modal-content-small modal-closing-support onboarding-content">
