@@ -40,6 +40,7 @@ import { initShortcuts } from './features/shortcuts.js';
 import { initExportImport, setImportCompleteCallback } from './features/export-import.js';
 import { initMobileNav, closeMobileSidebar } from './features/mobile-nav.js';
 import { initLabelManager } from './features/label-manager.js';
+import { initPrivateModeWarning } from './features/private-mode-check.js';
 
 // -------- Aktif kullanıcı seçici (sidebar) --------
 function populateActiveUserSelect() {
@@ -172,6 +173,7 @@ function boot() {
   initOnboarding();
   initShortcuts();
   initExportImport();
+  initPrivateModeWarning();
   initMobileNav();
   initLabelManager();
   initActiveUserSelect();
